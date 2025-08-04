@@ -30,13 +30,24 @@ const formData = ref({
   registrationSubmission: getTodayDate(),
 })
 
-console.log('formData:', formData.value)
+const isFormValid = ref(false)
+
+watch(
+  formData,
+  (newValue) => {
+    console.log('newValue:', newValue)
+    isFormValid.value =
+      newValue.name !== '' &&
+      newValue.type !== '' &&
+      newValue.licensePlate !== '' &&
+      newValue.lastRegistration !== '' &&
+      newValue.registrationSubmission !== '' &&
+      validateLicensePlate()
+  },
+  { deep: true },
+)
 
 const submitForm = () => {
-  if (!validateLicensePlate()) {
-    alert('Please enter a valid license plate in format XX-NNNN-XX')
-    return
-  }
   console.log('Form submitted:', formData.value)
 }
 
@@ -159,7 +170,7 @@ const validateLicensePlate = () => {
         required
       />
     </div>
-    <button type="submit">Submit</button>
+    <button type="submit" :disabled="!isFormValid">Submit</button>
   </form>
 </template>
 
@@ -184,6 +195,10 @@ button {
 }
 button:hover {
   background-color: var(--vt-c-green-dark);
+}
+button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
 }
 
 .autocomplete {
