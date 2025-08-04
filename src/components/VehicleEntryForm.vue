@@ -119,7 +119,7 @@ const formatLicensePlate = (event: Event) => {
 
 <template>
   <form @submit.prevent="onSubmit">
-    <h2>Vehicle Entry Form</h2>
+    <h2>Vehicle Entry form</h2>
     <div>
       <label for="name">Name:</label>
       <input type="text" id="name" v-model="name" maxlength="50" />
