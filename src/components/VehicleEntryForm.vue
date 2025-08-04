@@ -15,47 +15,66 @@ const vehicleModels = [
   'Toyota',
   'Volkswagen',
 ]
+
 // Get today's date in YYYY-MM-DD format
 const getTodayDate = () => {
   const today = new Date()
   return today.toISOString().split('T')[0]
 }
 
-const formData = ref({
-  name: '',
-  type: '',
-  model: '',
-  licensePlate: '',
-  lastRegistration: '',
-  registrationSubmission: getTodayDate(),
+import { useForm, useField } from 'vee-validate'
+import * as yup from 'yup'
+
+const schema = yup.object({
+  name: yup
+    .string()
+    .required('Name is a required field')
+    .max(50, 'Name must be at most 50 characters long'),
+  type: yup.string().required('Type is a required field'),
+  model: yup.string().required('Model is a required field'),
+  licensePlate: yup
+    .string()
+    .required('License plate is a required field')
+    .matches(
+      /^[A-Z]{2}-[0-9]{4}-[A-Z]{2}$/,
+      'License plate must be in format XX-NNNN-XX (e.g., AB-1234-CD)',
+    ),
+  lastRegistration: yup
+    .date()
+    .required('Last registration date is a required field')
+    .max(getTodayDate(), 'Last registration date cannot be in the future'),
+  registrationSubmission: yup
+    .date()
+    .required('Date of registration submission is a required field')
+    .min(
+      yup.ref('lastRegistration'),
+      'Date of registration submission must be after last registration date',
+    ),
 })
 
-const isFormValid = ref(false)
+// Initialize form with schema
+const { handleSubmit, errors, meta, isSubmitting } = useForm({ validationSchema: schema })
 
-watch(
-  formData,
-  (newValue) => {
-    console.log('newValue:', newValue)
-    isFormValid.value =
-      newValue.name !== '' &&
-      newValue.type !== '' &&
-      newValue.licensePlate !== '' &&
-      newValue.lastRegistration !== '' &&
-      newValue.registrationSubmission !== '' &&
-      validateLicensePlate()
-  },
-  { deep: true },
-)
+const { value: name } = useField<string>('name')
+const { value: type } = useField<string>('type', {
+  initialValue: '',
+})
+const { value: model } = useField<string>('model')
+const { value: licensePlate } = useField<string>('licensePlate')
+const { value: lastRegistration } = useField('lastRegistration')
+const { value: registrationSubmission } = useField('registrationSubmission')
 
-const submitForm = () => {
-  console.log('Form submitted:', formData.value)
-}
+// Submit handler
+const onSubmit = handleSubmit(() => {
+  alert(
+    `Vehicle form submitted! Name: ${name.value}, Type: ${type.value}, Model: ${model.value}, License Plate: ${licensePlate.value}, Last Registration: ${lastRegistration.value}, Registration Submission: ${registrationSubmission.value}`,
+  )
+})
 
 const query = ref('')
 
 watch(query, (newValue) => {
-  console.log('Query changed:', newValue)
-  formData.value.model = newValue // update model in formData when query changes
+  model.value = newValue // update model in formData when query changes
 })
 
 // Vehicle models autocomplete
@@ -66,14 +85,14 @@ const filterOptions = () => {
   filteredOptions.value = vehicleModels.filter((option) => option.toLowerCase().includes(search))
 }
 
-const selectOption = (option) => {
+const selectOption = (option: string) => {
   query.value = option // set input to selected option
   filteredOptions.value = [] // hide suggestions
 }
 
 // License plate formatting and validation
-const formatLicensePlate = (event) => {
-  let value = event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') // Remove non-alphanumeric and convert to uppercase
+const formatLicensePlate = (event: Event) => {
+  let value = (event.target as HTMLInputElement).value.toUpperCase().replace(/[^A-Z0-9]/g, '') // Remove non-alphanumeric and convert to uppercase
 
   // Apply formatting: XX-NNNN-XX
   if (value.length > 0) {
@@ -94,30 +113,27 @@ const formatLicensePlate = (event) => {
     }
   }
 
-  formData.value.licensePlate = value
-}
-
-const validateLicensePlate = () => {
-  const pattern = /^[A-Z]{2}-[0-9]{4}-[A-Z]{2}$/
-  return pattern.test(formData.value.licensePlate)
+  licensePlate.value = value
 }
 </script>
 
 <template>
-  <form @submit.prevent="submitForm">
+  <form @submit.prevent="onSubmit">
     <h2>Vehicle Entry Form</h2>
     <div>
       <label for="name">Name:</label>
-      <input type="text" id="name" v-model="formData.name" required maxlength="50" />
+      <input type="text" id="name" v-model="name" maxlength="50" />
+      <small class="error">{{ errors.name }}</small>
     </div>
     <div>
       <label for="type">Type:</label>
-      <select id="type" v-model="formData.type" required>
-        <option value="" disabled>Select type</option>
+      <select id="type" v-model="type">
+        <option value="">Select type</option>
         <option v-for="type in vehicleTypes" :key="type" :value="type.toLowerCase()">
           {{ type }}
         </option>
       </select>
+      <small class="error">{{ errors.type }}</small>
     </div>
     <div class="autocomplete">
       <label for="model">Model:</label>
@@ -134,47 +150,50 @@ const validateLicensePlate = () => {
           {{ option }}
         </li>
       </ul>
+      <small class="error">{{ errors.model }}</small>
     </div>
     <div>
       <label for="licensePlate">License Plate number:</label>
       <input
         type="text"
         id="licensePlate"
-        :value="formData.licensePlate"
+        :value="licensePlate"
         @input="formatLicensePlate"
         placeholder="XX-NNNN-XX"
         maxlength="10"
-        required
       />
-      <small v-if="formData.licensePlate && !validateLicensePlate()" style="color: red">
-        Invalid format. Use XX-NNNN-XX (e.g., AB-1234-CD)
+      <small class="error">
+        {{ errors.licensePlate }}
       </small>
     </div>
     <div>
       <label for="lastRegistration">Last Registration date:</label>
-      <input
-        type="date"
-        id="lastRegistration"
-        v-model="formData.lastRegistration"
-        :max="getTodayDate()"
-        required
-      />
+      <input type="date" id="lastRegistration" v-model="lastRegistration" :max="getTodayDate()" />
+      <small class="error">
+        {{ errors.lastRegistration }}
+      </small>
     </div>
     <div>
       <label for="registrationSubmission">Date of registration submission:</label>
       <input
         type="date"
         id="registrationSubmission"
-        v-model="formData.registrationSubmission"
-        :min="formData.lastRegistration"
-        required
+        v-model="registrationSubmission"
+        :min="lastRegistration"
       />
+      <small class="error">
+        {{ errors.registrationSubmission }}
+      </small>
     </div>
-    <button type="submit" :disabled="!isFormValid">Submit</button>
+    <button type="submit" :disabled="!meta.valid || isSubmitting">Submit</button>
   </form>
 </template>
 
 <style>
+.error {
+  color: red;
+}
+
 form div {
   margin-bottom: 15px;
 }
@@ -203,7 +222,6 @@ button:disabled {
 
 .autocomplete {
   position: relative;
-  width: 250px;
 }
 
 .suggestions {
