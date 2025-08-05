@@ -54,7 +54,9 @@ const schema = yup.object({
 })
 
 // Initialize form with schema
-const { handleSubmit, errors, meta, isSubmitting } = useForm({ validationSchema: schema })
+const { handleSubmit, errors, meta, isSubmitting, resetForm } = useForm({
+  validationSchema: schema,
+})
 
 const { value: name } = useField<string>('name')
 const { value: type } = useField<string>('type', schema, {
@@ -81,6 +83,7 @@ const onSubmit = handleSubmit(() => {
       `Vehicle form submitted! Name: ${name.value}, Type: ${type.value}, Model: ${model.value}, License Plate: ${licensePlate.value}, Last Registration: ${lastRegistration.value}, Date of registration submission: ${registrationSubmission.value}`,
     )
   }
+  resetForm()
 })
 
 // Vehicle models autocomplete
