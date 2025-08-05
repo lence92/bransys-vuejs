@@ -139,6 +139,13 @@ th {
   text-align: center;
 }
 
+@media (prefers-color-scheme: dark) {
+  th {
+    color: var(--color-text);
+    background: var(--color-background);
+  }
+}
+
 @media (max-width: 600px) {
   .actions {
     flex-direction: column;
