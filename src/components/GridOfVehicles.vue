@@ -139,8 +139,43 @@ th {
   text-align: center;
 }
 
+@media (max-width: 600px) {
+  .actions {
+    flex-direction: column;
+  }
+  table {
+    display: block;
+    overflow-x: auto;
+  }
+  thead {
+    display: block;
+    width: 100%;
+  }
+  thead tr:first-child {
+    display: none;
+  }
+  tbody {
+    display: block;
+  }
+  tr {
+    display: flex;
+    flex-direction: column;
+    border-bottom: 1px solid #ddd;
+  }
+
+  /* th,
+  td {
+    display: block;
+    width: 100%;
+  }
+  th {
+    text-align: left;
+  } */
+}
+
 .actions {
   display: flex;
+  justify-content: space-around;
   gap: 0.5rem;
 }
 
