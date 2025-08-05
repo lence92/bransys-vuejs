@@ -4,16 +4,9 @@ import GridOfVehicles from '@/components/GridOfVehicles.vue'
 
 <template>
   <div class="vehicles">
+    <h2>Grid of Vehicles</h2>
     <GridOfVehicles />
   </div>
 </template>
 
-<style>
-@media (min-width: 1024px) {
-  .vehicles {
-    /* min-height: 100vh; */
-    display: flex;
-    align-items: center;
-  }
-}
-</style>
+<style></style>

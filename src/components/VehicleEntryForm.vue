@@ -1,6 +1,10 @@
 <script setup lang="ts">
-import { watch, ref } from 'vue'
+import { watch, ref, watchEffect } from 'vue'
+import { useForm, useField } from 'vee-validate'
+import * as yup from 'yup'
 
+const { vehicleUpdate } = defineProps(['vehicleUpdate'])
+const emit = defineEmits(['editVehicle'])
 const vehicleTypes = ['Car', 'Van', 'Truck', 'Container', 'Trailer', 'Dumper']
 const vehicleModels = [
   'Audi',
@@ -21,9 +25,6 @@ const getTodayDate = () => {
   const today = new Date()
   return today.toISOString().split('T')[0]
 }
-
-import { useForm, useField } from 'vee-validate'
-import * as yup from 'yup'
 
 const schema = yup.object({
   name: yup
@@ -56,29 +57,53 @@ const schema = yup.object({
 const { handleSubmit, errors, meta, isSubmitting } = useForm({ validationSchema: schema })
 
 const { value: name } = useField<string>('name')
-const { value: type } = useField<string>('type', {
+const { value: type } = useField<string>('type', schema, {
   initialValue: '',
 })
 const { value: model } = useField<string>('model')
 const { value: licensePlate } = useField<string>('licensePlate')
 const { value: lastRegistration } = useField('lastRegistration')
-const { value: registrationSubmission } = useField('registrationSubmission')
+const { value: registrationSubmission } = useField('registrationSubmission', schema, {
+  initialValue: getTodayDate(),
+})
 
 // Submit handler
 const onSubmit = handleSubmit(() => {
-  alert(
-    `Vehicle form submitted! Name: ${name.value}, Type: ${type.value}, Model: ${model.value}, License Plate: ${licensePlate.value}, Last Registration: ${lastRegistration.value}, Registration Submission: ${registrationSubmission.value}`,
-  )
-})
-
-const query = ref('')
-
-watch(query, (newValue) => {
-  model.value = newValue // update model in formData when query changes
+  if (vehicleUpdate) {
+    emit('editVehicle', {
+      vehicleName: name.value,
+      vehicleType: type.value,
+      model: model.value,
+      plateNumber: licensePlate.value,
+    })
+  } else {
+    alert(
+      `Vehicle form submitted! Name: ${name.value}, Type: ${type.value}, Model: ${model.value}, License Plate: ${licensePlate.value}, Last Registration: ${lastRegistration.value}, Date of registration submission: ${registrationSubmission.value}`,
+    )
+  }
 })
 
 // Vehicle models autocomplete
+const query = ref('')
 const filteredOptions = ref([...vehicleModels])
+const isAutocompleteTouched = ref(false)
+
+watchEffect(() => {
+  if (vehicleUpdate) {
+    name.value = vehicleUpdate.vehicleName
+    type.value = vehicleUpdate.vehicleType
+    query.value = vehicleUpdate.model
+    licensePlate.value = vehicleUpdate.plateNumber
+  }
+})
+
+watch(
+  query,
+  (newValue) => {
+    model.value = newValue // update model in formData when query changes
+  },
+  { immediate: vehicleUpdate },
+)
 
 const filterOptions = () => {
   const search = query.value.toLowerCase()
@@ -129,7 +154,7 @@ const formatLicensePlate = (event: Event) => {
       <label for="type">Type:</label>
       <select id="type" v-model="type">
         <option value="">Select type</option>
-        <option v-for="type in vehicleTypes" :key="type" :value="type.toLowerCase()">
+        <option v-for="type in vehicleTypes" :key="type" :value="type">
           {{ type }}
         </option>
       </select>
@@ -142,10 +167,14 @@ const formatLicensePlate = (event: Event) => {
         id="model"
         v-model="query"
         @input="filterOptions"
+        @keyup="isAutocompleteTouched = true"
         placeholder="Type to search and select a model..."
       />
 
-      <ul v-if="query && filteredOptions.length > 0" class="suggestions">
+      <ul
+        v-if="isAutocompleteTouched && query !== '' && filteredOptions.length > 0"
+        class="suggestions"
+      >
         <li v-for="(option, index) in filteredOptions" :key="index" @click="selectOption(option)">
           {{ option }}
         </li>
@@ -179,13 +208,15 @@ const formatLicensePlate = (event: Event) => {
         type="date"
         id="registrationSubmission"
         v-model="registrationSubmission"
-        :min="lastRegistration"
+        :min="lastRegistration ? lastRegistration : getTodayDate()"
       />
       <small class="error">
         {{ errors.registrationSubmission }}
       </small>
     </div>
-    <button type="submit" :disabled="!meta.valid || isSubmitting">Submit</button>
+    <button type="submit" :disabled="!meta.valid || isSubmitting">
+      {{ vehicleUpdate ? 'Update' : 'Create' }} Vehicle
+    </button>
   </form>
 </template>
 
