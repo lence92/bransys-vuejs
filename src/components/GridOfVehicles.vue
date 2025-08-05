@@ -10,6 +10,7 @@ interface Vehicle {
   plateNumber: string
 }
 const filteredVehicles: Ref<Vehicle[]> = ref(vehicles)
+const searchQuery = ref('')
 
 const showModal = ref(false)
 const editVehicleIndex = ref<number | null>(null)
@@ -53,6 +54,13 @@ const deleteVehicle = (index: number) => {
     filteredVehicles.value = filteredVehicles.value.filter((_, i) => i !== index)
   }
 }
+
+const filterVehicles = () => {
+  const query = searchQuery.value.toLowerCase()
+  filteredVehicles.value = vehicles.filter((vehicle) =>
+    Object.values(vehicle).some((value) => value.toLowerCase().includes(query)),
+  )
+}
 </script>
 
 <template>
@@ -68,6 +76,16 @@ const deleteVehicle = (index: number) => {
         <th>Model</th>
         <th>License plate number</th>
         <th>Actions</th>
+      </tr>
+      <tr>
+        <th colspan="5">
+          <input
+            type="search"
+            placeholder="Search vehicles by any field..."
+            v-model="searchQuery"
+            @input="filterVehicles"
+          />
+        </th>
       </tr>
     </thead>
     <tbody>
